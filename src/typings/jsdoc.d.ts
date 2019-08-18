@@ -55,6 +55,7 @@ declare interface IDocletCode {
 declare interface IDocletMeta {
     range: number[];
     filename: string;
+    columnno: number;
     lineno: number;
     path: string;
     code: IDocletCode;

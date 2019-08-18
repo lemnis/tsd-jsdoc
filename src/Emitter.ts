@@ -16,6 +16,7 @@ import {
     createTypedef,
     createEnum,
 } from './create_helpers';
+import { getRelativePath } from './getFilePath';
 
 interface IDocletTreeNode
 {
@@ -164,7 +165,11 @@ export class Emitter
 
                 if (!parent)
                 {
-                    warn(`Failed to find parent of doclet '${doclet.longname}' using memberof '${doclet.memberof}', this is likely due to invalid JSDoc.`, doclet);
+                    warn(
+                        `Failed to find parent of doclet '${doclet.longname}'.`+
+                        `${doclet.meta ? ` At ${getRelativePath(doclet.meta)}` : ''}`,
+                        doclet
+                    );
                     continue;
                 }
 
@@ -344,7 +349,7 @@ export class Emitter
 
             if (!parent)
             {
-                warn(`Failed to find parent of doclet '${obj.doclet.longname}' using memberof '${obj.doclet.memberof}', this is likely due to invalid JSDoc.`, obj.doclet);
+                warn(`Failed to find parent of doclet '${obj.doclet.longname}' using memberof '${obj.doclet.memberof}'.`, obj.doclet);
                 return mod;
             }
 

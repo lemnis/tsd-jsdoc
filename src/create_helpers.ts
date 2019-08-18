@@ -1,12 +1,13 @@
 import * as ts from 'typescript';
 import { warn } from './logger';
 import { resolveType, createFunctionParams, createFunctionReturnType, resolveTypeParameters, resolveHeritageClauses } from './type_resolve_helpers';
+import { getRelativePath } from './getFilePath';
 
 const declareModifier = ts.createModifier(ts.SyntaxKind.DeclareKeyword);
 const constModifier = ts.createModifier(ts.SyntaxKind.ConstKeyword);
 const readonlyModifier = ts.createModifier(ts.SyntaxKind.ReadonlyKeyword);
 
-function validateClassLikeChildren(children: ts.Node[] | undefined, validate: (n: ts.Node) => boolean, msg: string)
+function validateClassLikeChildren(children: ts.Node[] | undefined, validate: (n: ts.Node) => boolean, msg: string, doclet: IDocletBase)
 {
     // Validate that the children array actually contains type elements.
     // This should never trigger, but is here for safety.
@@ -17,21 +18,21 @@ function validateClassLikeChildren(children: ts.Node[] | undefined, validate: (n
             const child = children[i];
             if (!validate(child))
             {
-                warn(`Encountered child that is not a ${msg}, this is likely due to invalid JSDoc.`, child);
+                warn(`Encountered child that is not a ${msg}. At ${getRelativePath(doclet.meta!)}`, child);
                 children.splice(i, 1);
             }
         }
     }
 }
 
-function validateClassChildren(children: ts.Node[] | undefined)
+function validateClassChildren(children: ts.Node[] | undefined, doclet: IDocletBase)
 {
-    return validateClassLikeChildren(children, ts.isClassElement, 'ClassElement');
+    return validateClassLikeChildren(children, ts.isClassElement, 'ClassElement', doclet);
 }
 
-function validateInterfaceChildren(children: ts.Node[] | undefined)
+function validateInterfaceChildren(children: ts.Node[] | undefined, doclet: IDocletBase)
 {
-    return validateClassLikeChildren(children, ts.isTypeElement, 'TypeElement');
+    return validateClassLikeChildren(children, ts.isTypeElement, 'TypeElement', doclet);
 }
 
 function validateModuleChildren(children?: ts.Node[])
@@ -51,7 +52,7 @@ function validateModuleChildren(children?: ts.Node[])
                 && !ts.isTypeAliasDeclaration(child)
                 && !ts.isVariableStatement(child))
             {
-                warn('Encountered child that is not a supported declaration, this is likely due to invalid JSDoc.', child);
+                warn('Encountered child that is not a supported declaration.', child);
                 children.splice(i, 1);
             }
         }
@@ -83,7 +84,7 @@ function handleComment<T extends ts.Node>(doclet: IDocletBase, node: T): T
 
 export function createClass(doclet: IClassDoclet, children?: ts.Node[]): ts.ClassDeclaration
 {
-    validateClassChildren(children);
+    validateClassChildren(children, doclet);
 
     const mods = doclet.memberof ? undefined : [declareModifier];
     const members = children as ts.ClassElement[] || [];
@@ -119,7 +120,7 @@ export function createClass(doclet: IClassDoclet, children?: ts.Node[]): ts.Clas
 
 export function createInterface(doclet: IClassDoclet, children?: ts.Node[]): ts.InterfaceDeclaration
 {
-    validateInterfaceChildren(children);
+    validateInterfaceChildren(children, doclet);
 
     const mods = doclet.memberof ? undefined : [declareModifier];
     const members = children as ts.TypeElement[];

@@ -3,6 +3,7 @@ import { Dictionary } from './Dictionary';
 import { warn } from './logger';
 import { PropTree, IPropDesc } from './PropTree';
 import { type } from 'os';
+import { getRelativePath } from './getFilePath';
 
 const rgxObjectTokenize = /(<|>|,|\(|\)|\||\{|\}|:)/;
 const rgxCommaAll = /,/g;
@@ -245,7 +246,7 @@ function resolveTree(node: StringTreeNode, parentTypes: ts.TypeNode[] | null = n
                 let valType = childTypes[i + 1];
                 if (!valType)
                 {
-                    warn('Unable to resolve object value type, this is likely due to invalid JSDoc. Defaulting to \`any\`.', node);
+                    warn('Unable to resolve object value type. Defaulting to \`any\`.', node);
                     valType = anyTypeNode;
                 }
 
@@ -275,7 +276,7 @@ function resolveTree(node: StringTreeNode, parentTypes: ts.TypeNode[] | null = n
                 let keyType = childTypes[0];
                 if (!keyType)
                 {
-                    warn(`Unable to resolve object key type, this is likely due to invalid JSDoc. Defaulting to \`string\`.`);
+                    warn(`Unable to resolve object key type. Defaulting to \`string\`.`);
                     keyType = strTypeNode;
                 }
                 else if (node.children[0].type !== ENodeType.TYPE || (node.children[0].name !== 'string' && node.children[0].name !== 'number'))
@@ -287,7 +288,7 @@ function resolveTree(node: StringTreeNode, parentTypes: ts.TypeNode[] | null = n
                 let valType = childTypes[1];
                 if (!valType)
                 {
-                    warn('Unable to resolve object value type, this is likely due to invalid JSDoc. Defaulting to \`any\`.', node);
+                    warn('Unable to resolve object value type. Defaulting to \`any\`.', node);
                     valType = anyTypeNode;
                 }
 
@@ -569,16 +570,15 @@ export function resolveType(t: IDocletType, doclet?: TTypedDoclet): ts.TypeNode
     if (!t || !t.names || t.names.length === 0)
     {
         if (doclet && doclet.properties)
-            return resolveTypeName('object', doclet);
+        return resolveTypeName('object', doclet);
 
         if (doclet)
         {
-            warn(`Unable to resolve type for ${doclet.longname || doclet.name}, none specified in JSDoc. Defaulting to \`any\`.`, doclet);
+            warn(`Unable to resolve type for ${doclet.longname || doclet.name}, none specified in JSDoc. Defaulting to \`any\`. At ${getRelativePath(doclet.meta!)}`, doclet);
         }
         else
         {
-            warn(`Unable to resolve type for an unnamed item, this is likely due to invalid JSDoc.` +
-                ` Often this is caused by invalid JSDoc on a parameter. Defaulting to \`any\`.`, doclet);
+            warn(`Unable to resolve type for an unnamed item. Defaulting to \`any\`.`, doclet);
         }
 
         return anyTypeNode;
@@ -730,6 +730,7 @@ export function createFunctionParams(doclet: IFunctionDoclet | ITypedefDoclet | 
         const opt = resolveOptional(node.prop);
         const dots = resolveVariable(node.prop);
         let type = node.children.length ? createTypeLiteral(node.children) : resolveType(node.prop.type);
+        if(!node.children.length && !node.prop.type) warn(`At ${getRelativePath(doclet.meta!)}`);
 
         if (dots)
         {
